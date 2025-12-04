@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⌚ 상태창 믹서기</title>
+    <style>
+        @font-face {
+            font-family: 'Ridibatang';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.0/RIDIBatang.woff') format('woff');
+            font-weight: normal;
+            font-display: swap;
+        }
+
+        :root {
+            /* 따뜻한 토스트 & 고양이 테마 */
+            --bg-primary: #fffbf0;
+            --bg-secondary: #fff9e6;
+            --bg-tertiary: #fff4d6;
+            
+            --text-primary: #5c5042;
+            --text-secondary: #8b7355;
+            
+            --accent: #ffb84d;
+            --accent-hover: #ffa726;
+            --border: #ffe4a3;
+            
+            --input-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Ridibatang', 'Pretendard', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .bread-link {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            text-decoration: none;
+            background: var(--bg-secondary);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            transition: transform 0.3s, border-color 0.3s;
+        }
+
+        .bread-link:hover {
+            transform: scale(1.1) rotate(10deg);
+            border-color: var(--accent);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+            .bread-link {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 1.5rem;
+            }
+        }
+
+        .input-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: bold;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--input-bg);
+            font-family: 'Ridibatang', sans-serif;
+            font-size: 0.95rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+            color: var(--text-primary);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        .convert-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Ridibatang', sans-serif;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(255, 184, 77, 0.3);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .convert-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 184, 77, 0.4);
+        }
+
+        .result-section {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #resultOutput {
+            height: 100px;
+            background: var(--bg-tertiary);
+            border: 1px dashed var(--text-secondary);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(50px);
+            background: var(--accent);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .example-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: -10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="https://toastout.github.io/toast/" class="bread-link" title="홈으로 이동" target="_blank">🍞</a>
+            <h1>⌚ 상태창 믹서기</h1>
+            <p class="subtitle">Time은 영어 포맷으로(요일은 한글), 내용은 한글로!</p>
+        </header>
+
+        <div class="input-grid">
+            <div class="input-box">
+                <label for="engInput">🇺🇸 1. 원본 (영어 상태창)</label>
+                <textarea id="engInput" placeholder="[Time: 2025/11/29(Sat), 15:05 PM|Location: ... ]&#13;&#10;여기에 영어 원문을 붙여넣으세요."></textarea>
+            </div>
+            <div class="input-box">
+                <label for="korInput">🇰🇷 2. 번역본 (한글 상태창)</label>
+                <textarea id="korInput" placeholder="[시간: 2025년 11월 29일(토)... |장소: ... ]&#13;&#10;여기에 한글 번역본을 붙여넣으세요."></textarea>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="example-btn" id="loadExample">예시 문구 넣기</button>
+            <button class="convert-btn" id="mixBtn">✨ 변환 및 복사하기</button>
+        </div>
+
+        <div class="result-section">
+            <div class="result-header">
+                <label>📋 결과물 (자동 복사됨)</label>
+            </div>
+            <textarea id="resultOutput" readonly placeholder="변환 버튼을 누르면 결과가 여기에 나타납니다."></textarea>
+        </div>
+    </div>
+
+    <div class="toast" id="toastMsg">🍞 믹스 완료! 클립보드에 복사되었어요.</div>
+
+    <script>
+        const engInput = document.getElementById('engInput');
+        const korInput = document.getElementById('korInput');
+        const resultOutput = document.getElementById('resultOutput');
+        const mixBtn = document.getElementById('mixBtn');
+        const loadExampleBtn = document.getElementById('loadExample');
+        const toast = document.getElementById('toastMsg');
+
+        // 요일 변환 맵
+        const dayMap = {
+            'Mon': '월',
+            'Tue': '화',
+            'Wed': '수',
+            'Thu': '목',
+            'Fri': '금',
+            'Sat': '토',
+            'Sun': '일'
+        };
+
+        // 예시 데이터 업데이트
+        loadExampleBtn.addEventListener('click', () => {
+            engInput.value = "[Time: 2024/05/20(Mon), 08:50 AM|Location: Company Elevator Hall|가온's outfit: Navy Suit, Guarded Posture|나길: Black Hoodie, Blazer, Jeans|Belongings: Leather Briefcase, Employee ID Card]";
+            korInput.value = "[시간: 2024/05/20(월), 오전 08:50 | 장소: 회사 엘리베이터 홀 | 가온의 복장: 네이비 수트, 경계하는 자세 | 나길: 검은 후드티, 블레이저, 청바지 | 소지품: 가죽 서류 가방, 사원증]";
+        });
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function mixStatus() {
+            let rawEng = engInput.value.trim();
+            let rawKor = korInput.value.trim();
+
+            if (!rawEng || !rawKor) {
+                showToast("⚠️ 영어와 한글 내용을 모두 넣어주세요!");
+                return;
+            }
+
+            // 대괄호 제거
+            const stripBrackets = (str) => {
+                if(str.startsWith('[')) str = str.substring(1);
+                if(str.endsWith(']')) str = str.slice(0, -1);
+                return str;
+            };
+
+            let engBody = stripBrackets(rawEng);
+            let korBody = stripBrackets(rawKor);
+
+            let engSegments = engBody.split('|');
+            let korSegments = korBody.split('|');
+
+            let mixedSegments = [];
+            
+            for(let i = 0; i < engSegments.length; i++) {
+                let engSeg = engSegments[i].trim();
+                let korSeg = (korSegments[i]) ? korSegments[i].trim() : ""; 
+
+                let engColonIdx = engSeg.indexOf(':');
+                let korColonIdx = korSeg.indexOf(':');
+
+                if (engColonIdx !== -1) {
+                    let key = engSeg.substring(0, engColonIdx).trim();
+                    let value = "";
+
+                    // ★ 핵심 수정 사항 v3 ★
+                    if (key.toLowerCase() === 'time') {
+                        // 1. 영어 원본 값을 가져옵니다. (15:05 PM 등을 유지하기 위해)
+                        let timeVal = engSeg.substring(engColonIdx + 1).trim();
+                        
+                        // 2. 영어 요일(Sat, Sun 등)을 한글(토, 일)로 교체합니다.
+                        for (const [engDay, korDay] of Object.entries(dayMap)) {
+                            // (Sat) 형태를 찾아서 (토)로 변경
+                            // 대소문자 구분 없이 찾기 위해 정규식 사용 가능하지만, 
+                            // 입력값 패턴이 일정하다면 replace로 처리
+                            if (timeVal.includes(`(${engDay})`)) {
+                                timeVal = timeVal.replace(`(${engDay})`, `(${korDay})`);
+                            } else if (timeVal.includes(engDay)) {
+                                // 괄호 없이 Sat만 있는 경우도 대비
+                                timeVal = timeVal.replace(engDay, korDay);
+                            }
+                        }
+                        value = timeVal;
+
+                    } else {
+                        // 그 외 항목(Location 등)은 한글 번역본 사용
+                        if (korColonIdx !== -1) {
+                            value = korSeg.substring(korColonIdx + 1).trim();
+                        } else {
+                            value = engSeg.substring(engColonIdx + 1).trim();
+                        }
+                    }
+
+                    mixedSegments.push(`${key}: ${value}`);
+                } else {
+                    mixedSegments.push(engSeg);
+                }
+            }
+
+            const finalResult = `[${mixedSegments.join('|')}]`;
+            
+            resultOutput.value = finalResult;
+            
+            navigator.clipboard.writeText(finalResult).then(() => {
+                showToast("🍞 믹스 완료! 클립보드에 복사되었어요.");
+            }).catch(() => {
+                showToast("✅ 변환 완료! (자동 복사 실패)");
+            });
+        }
+
+        mixBtn.addEventListener('click', mixStatus);
+    </script>
+</body>
+</html>
