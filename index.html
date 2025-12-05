@@ -229,6 +229,25 @@ h1{font-size:2rem;margin-bottom:10px;color:var(--text-primary)}
 
 .input-box{display:flex;flex-direction:column;gap:10px}
 label{font-weight:bold;color:var(--text-secondary);display:flex;align-items:center;gap:5px}
+.translate-btn{
+background:var(--bg-tertiary);
+border:2px solid var(--border);
+border-radius:50%;
+width:28px;
+height:28px;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+font-size:0.9rem;
+transition:all .3s;
+margin-left:auto;
+}
+.translate-btn:hover{
+background:var(--accent);
+border-color:var(--accent);
+transform:scale(1.1);
+}
 textarea{width:100%;min-height:150px;padding:15px;border:2px solid var(--border);border-radius:12px;background:var(--input-bg);font-family:'Ridibatang',sans-serif;font-size:.95rem;resize:vertical;transition:border-color .3s;color:var(--text-primary)}
 textarea:focus{outline:none;border-color:var(--accent)}
 .controls{display:flex;flex-direction:column;align-items:center;gap:15px;padding:10px 0}
@@ -244,6 +263,74 @@ textarea::-webkit-scrollbar{width:8px}
 textarea::-webkit-scrollbar-track{background:var(--bg-tertiary);border-radius:4px}
 textarea::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
 textarea::-webkit-scrollbar-thumb:hover{background:var(--accent-hover)}
+
+/* 번역 모달 */
+.translate-modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+z-index:2000;
+align-items:center;
+justify-content:center;
+}
+.translate-modal.active{
+display:flex;
+}
+.translate-modal-content{
+background:var(--bg-secondary);
+border:2px solid var(--border);
+border-radius:20px;
+padding:30px;
+display:flex;
+flex-direction:column;
+gap:15px;
+min-width:300px;
+box-shadow:0 8px 24px rgba(0,0,0,0.2);
+}
+.translate-modal-content h3{
+color:var(--text-primary);
+text-align:center;
+margin-bottom:10px;
+}
+.translate-option{
+background:var(--bg-tertiary);
+border:2px solid var(--border);
+border-radius:12px;
+padding:15px;
+cursor:pointer;
+display:flex;
+align-items:center;
+gap:12px;
+font-family:inherit;
+font-size:1rem;
+color:var(--text-primary);
+transition:all .3s;
+}
+.translate-option:hover{
+background:var(--accent);
+border-color:var(--accent);
+color:white;
+transform:translateY(-2px);
+}
+.translate-cancel{
+background:var(--bg-tertiary);
+border:2px solid var(--border);
+border-radius:12px;
+padding:12px;
+cursor:pointer;
+font-family:inherit;
+font-size:0.95rem;
+color:var(--text-secondary);
+transition:all .3s;
+margin-top:5px;
+}
+.translate-cancel:hover{
+background:var(--border);
+}
 </style>
 </head>
 <body>
@@ -270,7 +357,10 @@ textarea::-webkit-scrollbar-thumb:hover{background:var(--accent-hover)}
 </header>
 <div class="input-grid">
 <div class="input-box">
-<label for="engInput">🇺🇸 1. 원본 (영어 상태창)</label>
+<label for="engInput">
+🇺🇸 1. 원본 (영어 상태창)
+<button class="translate-btn" id="translateBtn" title="번역기로 이동">🌐</button>
+</label>
 <textarea id="engInput" placeholder="[Time: 2025/11/29(Sat), 15:05 PM|Location: ... ]&#10;여기에 영어 원문을 붙여넣으세요."></textarea>
 </div>
 <div class="input-box">
@@ -290,6 +380,23 @@ textarea::-webkit-scrollbar-thumb:hover{background:var(--accent-hover)}
 </div>
 </div>
 <div class="toast" id="toastMsg">🍞 믹스 완료! 클립보드에 복사되었어요.</div>
+
+<!-- 번역기 선택 모달 -->
+<div class="translate-modal" id="translateModal">
+<div class="translate-modal-content">
+<h3>번역기 선택</h3>
+<button class="translate-option" data-service="google">
+<span style="font-size:1.5rem">🔵</span>
+<span>구글 번역</span>
+</button>
+<button class="translate-option" data-service="deepl">
+<span style="font-size:1.5rem">🔷</span>
+<span>DeepL 번역</span>
+</button>
+<button class="translate-cancel">취소</button>
+</div>
+</div>
+
 <script>
 const engInput=document.getElementById('engInput'),korInput=document.getElementById('korInput'),resultOutput=document.getElementById('resultOutput'),mixBtn=document.getElementById('mixBtn'),loadExampleBtn=document.getElementById('loadExample'),toast=document.getElementById('toastMsg'),themeDropdown=document.getElementById('themeDropdown'),themeMenu=document.getElementById('themeMenu'),themeOptions=document.querySelectorAll('.theme-option'),currentThemeEmoji=document.getElementById('currentThemeEmoji'),currentThemeName=document.getElementById('currentThemeName'),dayMap={Mon:'월',Tue:'화',Wed:'수',Thu:'목',Fri:'금',Sat:'토',Sun:'일'};
 
@@ -404,6 +511,59 @@ showToast('✅ 변환 완료! (자동 복사 실패)');
 }
 
 mixBtn.addEventListener('click',mixStatus);
+
+// 번역 기능
+const translateBtn=document.getElementById('translateBtn');
+const translateModal=document.getElementById('translateModal');
+const translateOptions=document.querySelectorAll('.translate-option');
+const translateCancel=document.querySelector('.translate-cancel');
+
+translateBtn.addEventListener('click',(e)=>{
+e.preventDefault();
+const text=engInput.value.trim();
+if(!text){
+showToast('⚠️ 번역할 내용을 먼저 입력해주세요!');
+return;
+}
+// 클립보드에 자동 복사
+navigator.clipboard.writeText(text).then(()=>{
+showToast('📋 텍스트가 복사되었어요!');
+translateModal.classList.add('active');
+}).catch(()=>{
+translateModal.classList.add('active');
+});
+});
+
+translateOptions.forEach(option=>{
+option.addEventListener('click',()=>{
+const service=option.dataset.service;
+const text=engInput.value.trim();
+let url;
+if(service==='google'){
+url=`https://translate.google.com/?sl=en&tl=ko&text=${encodeURIComponent(text)}`;
+}else if(service==='deepl'){
+// 딥엘은 텍스트 자동 입력이 안되므로 빈 페이지로 열기 (사용자가 붙여넣기)
+url=`https://www.deepl.com/ko/translator#en/ko/`;
+}
+window.open(url,'_blank');
+translateModal.classList.remove('active');
+if(service==='deepl'){
+showToast('🔷 DeepL 열림! Ctrl+V로 붙여넣기 해주세요.');
+}else{
+showToast('🌐 번역기로 이동했어요!');
+}
+});
+});
+
+translateCancel.addEventListener('click',()=>{
+translateModal.classList.remove('active');
+});
+
+translateModal.addEventListener('click',(e)=>{
+if(e.target===translateModal){
+translateModal.classList.remove('active');
+}
+});
 </script>
 </body>
 </html>
